@@ -59,7 +59,7 @@ npm run seed
 
 ```bash
 # Navegar al directorio del frontend
-cd ../frontend
+cd frontend
 
 # Instalar dependencias
 npm install
@@ -152,84 +152,6 @@ npx prisma db push --force-reset
 npx prisma generate
 ```
 
-## 🎯 Funcionalidades Principales
-
-### ✅ Gestión de Plantas
-
--  Crear plantas con código automático
--  Editar información de plantas
--  Eliminar plantas con confirmación
--  Validación de códigos únicos
-
-### ✅ Gestión de Operaciones
-
--  Crear operaciones por planta
--  Matriz de costos por volumen
--  Edición inline de costos
--  Eliminación con confirmación
-
-### ✅ Matriz de Costos
-
--  Vista matricial: Operaciones × Volúmenes
--  Formato inteligente (kg/T)
--  Edición por operación
--  Cálculos automáticos
-
-### ✅ Interfaz de Usuario
-
--  Diseño moderno con shadcn/ui
--  Responsive para móviles y desktop
--  Formularios con validación
--  Confirmaciones para acciones destructivas
-
-## 🛠️ Desarrollo
-
-### Estructura del Proyecto
-
-```
-indirect-costs/
-├── backend/
-│   ├── src/
-│   │   ├── modules/        # Módulos de NestJS
-│   │   ├── models/         # Modelos de datos
-│   │   ├── resolvers/      # Resolvers GraphQL
-│   │   └── schema.ts       # Schema GraphQL
-│   ├── prisma/
-│   │   ├── schema.prisma   # Esquema de base de datos
-│   │   └── migrations/     # Migraciones
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # Componentes React
-│   │   ├── hooks/          # Custom hooks
-│   │   ├── lib/            # Utilidades y constantes
-│   │   ├── graphql/        # Tipos generados
-│   │   └── types/          # Tipos TypeScript
-│   └── package.json
-└── README.md
-```
-
-### Convenciones de Código
-
--  **TypeScript strict mode** habilitado
--  **ESLint** para linting
--  **Prettier** para formato (recomendado)
--  **Conventional Commits** para mensajes de commit
-
-### GraphQL Code Generation
-
-El frontend usa CodeGen para generar tipos automáticamente:
-
-```bash
-# Generar tipos una vez
-npm run codegen
-
-# Modo watch (se regenera al cambiar schema)
-npm run codegen:watch
-```
-
-Los tipos se generan en `src/graphql/graphql.types.ts`
-
 ## 🔧 Configuración de Entorno
 
 ### Variables de Entorno (Backend)
@@ -247,9 +169,14 @@ PORT=4000
 NODE_ENV=development
 ```
 
-### Configuración de Apollo Client (Frontend)
+### Variables de Entorno (Frontend)
 
-El cliente está configurado para conectar a `http://localhost:4000/`
+Crear archivo `.env` en `/frontend`:
+
+```env
+# Conexión
+PUBLIC_API_URL= "http://localhost:4000"
+```
 
 ## 📝 Notas de Desarrollo
 
@@ -257,25 +184,12 @@ El cliente está configurado para conectar a `http://localhost:4000/`
 
 -  **Backend**: Usa `tsx` con watch mode
 -  **Frontend**: Vite HMR habilitado
--  **GraphQL Types**: CodeGen en modo watch
 
 ### Depuración
 
 -  **Backend**: GraphQL Playground en `http://localhost:4000/`
 -  **Base de datos**: Prisma Studio `npx prisma studio`
 -  **Frontend**: React DevTools recomendado
-
-### Testing
-
-```bash
-# Backend (cuando se implemente)
-cd backend
-npm run test
-
-# Frontend (cuando se implemente)
-cd frontend
-npm run test
-```
 
 ## 🚀 Despliegue
 
@@ -290,50 +204,3 @@ npm run build
 cd frontend
 npm run build
 ```
-
-### Variables de Entorno de Producción
-
-Configurar variables según el entorno de despliegue.
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abrir Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 🆘 Solución de Problemas
-
-### Puerto en uso
-
-Si el puerto 4000 está ocupado:
-
-```bash
-# Encontrar proceso
-netstat -ano | findstr :4000
-
-# Terminar proceso (Windows)
-taskkill /PID <PID> /F
-```
-
-### Problemas de GraphQL
-
-1. Verificar que el backend esté corriendo
-2. Regenerar tipos: `npm run codegen`
-3. Revisar Network tab en DevTools
-
-### Problemas de Base de Datos
-
-```bash
-cd backend
-npx prisma db push --force-reset
-npx prisma generate
-npm run seed
-```
-
----
