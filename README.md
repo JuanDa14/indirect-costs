@@ -24,7 +24,7 @@ Para configurar y ejecutar el proyecto rápidamente:
 
 ```bash
 # 1. Clonar el repositorio
-git clone <https://github.com/JuanDa14/indirect-costs>
+git clone <[https://github.com/JuanDa14/indirect-costs](https://github.com/JuanDa14/indirect-costs)>
 cd indirect-costs
 
 # 2. Configuración automática (recomendado)
