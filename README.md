@@ -18,30 +18,6 @@
 -  **Tailwind CSS** para estilos
 -  **GraphQL Code Generator** para tipado automático
 
-## ⚡ Instalación Rápida
-
-Para configurar y ejecutar el proyecto rápidamente:
-
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/JuanDa14/indirect-costs
-cd indirect-costs
-
-# 2. Configuración automática (recomendado)
-npm run setup
-
-# 3. Iniciar en modo desarrollo
-npm run dev
-```
-
-El comando `npm run setup` automáticamente:
-
--  ✅ Instala todas las dependencias
--  ✅ Configura archivos de entorno
--  ✅ Inicializa la base de datos
--  ✅ Genera tipos GraphQL
--  ✅ Prepara el proyecto para desarrollo
-
 ## 📋 Prerrequisitos
 
 Antes de ejecutar el proyecto, asegúrate de tener instalado:
