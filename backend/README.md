@@ -60,53 +60,59 @@ npm run prisma:generate # Generar cliente Prisma
 npm run prisma:migrate  # Crear migración
 ```
 
-### 📁 Estructura Actual del Proyecto
-
-```
-backend/
-├── src/
-│   ├── modules/                # Módulos de dominio
-│   │   ├── plants/            # Módulo de plantas
-│   │   │   ├── plant.service.ts
-│   │   │   ├── plant.resolver.ts
-│   │   │   └── plant.schema.ts
-│   │   └── operations/        # Módulo de operaciones
-│   │       ├── operation.service.ts
-│   │       ├── operation.resolver.ts
-│   │       └── operation.schema.ts
-│   ├── models/                # Modelos Prisma
-│   │   ├── Operation.ts       # Modelo de operación
-│   │   ├── Plan.ts           # Modelo de planta
-│   │   └── types.ts          # Tipos compartidos
-│   ├── resolvers/            # Resolvers GraphQL
-│   │   └── index.ts          # Combinación de resolvers
-│   ├── seed/                 # Datos de prueba
-│   │   └── seed.ts
-│   ├── context.ts           # Contexto GraphQL
-│   ├── schema.ts            # Schema GraphQL combinado
-│   └── index.ts             # Punto de entrada
-├── prisma/
-│   ├── schema.prisma        # Esquema de base de datos
-│   ├── dev.db              # Base de datos SQLite
-│   └── migrations/          # Migraciones (si se usan)
-├── .env                     # Variables de entorno
-├── .env.example            # Ejemplo de variables
-├── package.json
-└── tsconfig.json
-```
-
 ## 🗄️ Esquema de Base de Datos
+
+### Relaciones entre Entidades
+
+El sistema implementa:
+
+```
+📍 PLANTA (Plant)
+├── 🔧 OPERACIÓN 1 (Operation)
+│   ├── 💰 Costo para 300kg
+│   ├── 💰 Costo para 1000kg
+│   └── 💰 Costo para 5000kg
+├── 🔧 OPERACIÓN 2 (Operation)
+│   ├── 💰 Costo para 500kg
+│   └── 💰 Costo para 2000kg
+└── 🔧 OPERACIÓN N...
+```
+
+**Relación Principal:**
+
+-  **1 Planta → Muchas Operaciones → Muchos Costos Indirectos**
+
+### Detalle de las Relaciones
+
+#### 🏭 Plant → Operation (1:N)
+
+-  Una **planta** puede tener **múltiples operaciones** (Impresión, Laminado, Corte, etc.)
+-  Cada **operación** pertenece a **una sola planta**
+-  **Eliminación en cascada**: Si se elimina una planta, se eliminan todas sus operaciones
+
+#### ⚙️ Operation → IndirectCost (1:N)
+
+-  Una **operación** puede tener **múltiples costos indirectos** para diferentes volúmenes
+-  Cada **costo** pertenece a **una sola operación**
+-  **Eliminación en cascada**: Si se elimina una operación, se eliminan todos sus costos
+
+#### 📊 Restricciones de Integridad
+
+-  **Plant.code**: Único en todo el sistema
+-  **(Operation.plantId, Operation.name)**: Única por planta (no puede haber dos operaciones con el mismo nombre en la misma planta)
 
 ### Modelo Plant (Planta)
 
 ```prisma
 model Plant {
   id          String      @id @default(cuid())
-  name        String
-  code        String      @unique
-  operations  Operation[]
+  name        String      // Ej: "Planta Norte"
+  code        String      @unique // Ej: "PN"
+  operations  Operation[] // Relación 1:N con operaciones
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@map("plants")
 }
 ```
 
@@ -115,12 +121,15 @@ model Plant {
 ```prisma
 model Operation {
   id        String         @id @default(cuid())
-  name      String
-  plantId   String
+  name      String         // Ej: "Impresión", "Laminado"
+  plantId   String         // FK hacia Plant
   plant     Plant          @relation(fields: [plantId], references: [id], onDelete: Cascade)
-  costs     IndirectCost[]
+  costs     IndirectCost[] // Relación 1:N con costos
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
+
+  @@unique([plantId, name]) // Una operación única por planta
+  @@map("operations")
 }
 ```
 
@@ -129,69 +138,40 @@ model Operation {
 ```prisma
 model IndirectCost {
   id                 String    @id @default(cuid())
-  volumeThresholdKg  Float
-  costPerKg          Float
-  operationId        String
+  volumeThresholdKg  Float     // Ej: 300, 1000, 5000
+  costPerKg          Float     // Ej: 0.05, 0.03, 0.02
+  operationId        String    // FK hacia Operation
   operation          Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@unique([operationId, volumeThresholdKg]) // Un costo único por volumen por operación
+  @@map("indirect_costs")
 }
 ```
 
-## � GraphQL Schema
+### Ejemplo Práctico de Datos
 
-### Tipos Principales
-
-```graphql
-type Plant {
-	id: ID!
-	name: String!
-	code: String!
-	operations: [Operation!]
-	createdAt: Date!
-	updatedAt: Date!
-}
-
-type Operation {
-	id: ID!
-	name: String!
-	plantId: ID!
-	plant: Plant
-	costs: [IndirectCost!]!
-	createdAt: Date!
-	updatedAt: Date!
-}
-
-type IndirectCost {
-	id: ID!
-	volumeThresholdKg: Float!
-	costPerKg: Float!
-	operationId: ID!
-}
-```
-
-### Queries
-
-```graphql
-type Query {
-	plants: [Plant!]!
-	plant(id: ID!): Plant
-	plantOperations(plantId: ID!): [Operation!]!
-	operation(id: ID!): Operation
-}
-```
-
-### Mutations
-
-```graphql
-type Mutation {
-	# Plantas
-	createPlant(name: String!, code: String!): Plant!
-	updatePlant(id: ID!, name: String, code: String): Plant!
-	deletePlant(id: ID!): Boolean!
-
-	# Operaciones
-	createOperation(plantId: ID!, name: String!, costs: [IndirectCostInput!]): Operation!
-	updateOperationCosts(operationId: ID!, costs: [IndirectCostInput!]!): Operation!
-	deleteOperation(operationId: ID!): Boolean!
+```typescript
+// Planta Norte
+Plant {
+  name: "Planta Norte",
+  code: "PN",
+  operations: [
+    {
+      name: "Impresión",
+      costs: [
+        { volumeThresholdKg: 300, costPerKg: 0.05 },
+        { volumeThresholdKg: 1000, costPerKg: 0.03 },
+        { volumeThresholdKg: 5000, costPerKg: 0.02 }
+      ]
+    },
+    {
+      name: "Laminado",
+      costs: [
+        { volumeThresholdKg: 500, costPerKg: 0.04 },
+        { volumeThresholdKg: 2000, costPerKg: 0.025 }
+      ]
+    }
+  ]
 }
 ```
 
@@ -211,99 +191,6 @@ NODE_ENV=development
 
 # CORS (opcional)
 CORS_ORIGIN="http://localhost:5173"
-```
-
-### Context GraphQL
-
-```typescript
-export interface Context {
-	prisma: PrismaClient;
-	// Aquí se pueden agregar más servicios
-	// user?: User; // Para autenticación futura
-}
-
-export const createContext = (): Context => ({
-	prisma,
-});
-```
-
-## � Ejemplos de Uso GraphQL
-
-### Crear una nueva planta
-
-```graphql
-mutation {
-	createPlant(name: "Planta Norte", code: "PN") {
-		id
-		name
-		code
-		createdAt
-	}
-}
-```
-
-### Obtener plantas con operaciones
-
-```graphql
-query {
-	plants {
-		id
-		name
-		code
-		operations {
-			id
-			name
-			costs {
-				volumeThresholdKg
-				costPerKg
-			}
-		}
-	}
-}
-```
-
-### Crear una operación
-
-```graphql
-mutation {
-	createOperation(
-		plantId: "plant-id"
-		name: "Empaquetado"
-		costs: [
-			{ volumeThresholdKg: 300, costPerKg: 0.025 }
-			{ volumeThresholdKg: 1000, costPerKg: 0.020 }
-		]
-	) {
-		id
-		name
-		costs {
-			volumeThresholdKg
-			costPerKg
-		}
-	}
-}
-```
-
-### Actualizar costos de operación
-
-```graphql
-mutation {
-	updateOperationCosts(
-		operationId: "operation-id"
-		costs: [
-			{ volumeThresholdKg: 300, costPerKg: 0.030 }
-			{ volumeThresholdKg: 1000, costPerKg: 0.025 }
-			{ volumeThresholdKg: 3000, costPerKg: 0.020 }
-		]
-	) {
-		id
-		name
-		costs {
-			volumeThresholdKg
-			costPerKg
-		}
-	}
-}
 ```
 
 ## 📊 Datos de Prueba
