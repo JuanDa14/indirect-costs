@@ -49,3 +49,12 @@ npm run codegen:watch   # Generar tipos en modo watch
 # Calidad de código
 npm run lint            # Ejecutar ESLint
 ```
+
+## 🔧 Configuración
+
+### Variables de Entorno (.env)
+
+```env
+# Conexión
+PUBLIC_API_URL= "http://localhost:4000"
+```

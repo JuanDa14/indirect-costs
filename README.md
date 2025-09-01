@@ -129,6 +129,121 @@ npm run codegen:watch # Generar tipos en modo watch
 npm run lint         # Ejecutar ESLint
 ```
 
+## 🗄️ Esquema de Base de Datos
+
+### Relaciones entre Entidades
+
+El sistema implementa:
+
+```
+📍 PLANTA (Plant)
+├── 🔧 OPERACIÓN 1 (Operation)
+│   ├── 💰 Costo para 300kg
+│   ├── 💰 Costo para 1000kg
+│   └── 💰 Costo para 5000kg
+├── 🔧 OPERACIÓN 2 (Operation)
+│   ├── 💰 Costo para 500kg
+│   └── 💰 Costo para 2000kg
+└── 🔧 OPERACIÓN N...
+```
+
+**Relación Principal:**
+
+-  **1 Planta → Muchas Operaciones → Muchos Costos Indirectos**
+
+### Detalle de las Relaciones
+
+#### 🏭 Plant → Operation (1:N)
+
+-  Una **planta** puede tener **múltiples operaciones** (Impresión, Laminado, Corte, etc.)
+-  Cada **operación** pertenece a **una sola planta**
+-  **Eliminación en cascada**: Si se elimina una planta, se eliminan todas sus operaciones
+
+#### ⚙️ Operation → IndirectCost (1:N)
+
+-  Una **operación** puede tener **múltiples costos indirectos** para diferentes volúmenes
+-  Cada **costo** pertenece a **una sola operación**
+-  **Eliminación en cascada**: Si se elimina una operación, se eliminan todos sus costos
+
+#### 📊 Restricciones de Integridad
+
+-  **Plant.code**: Único en todo el sistema
+-  **(Operation.plantId, Operation.name)**: Única por planta (no puede haber dos operaciones con el mismo nombre en la misma planta)
+
+### Modelo Plant (Planta)
+
+```prisma
+model Plant {
+  id          String      @id @default(cuid())
+  name        String      // Ej: "Planta Norte"
+  code        String      @unique // Ej: "PN"
+  operations  Operation[] // Relación 1:N con operaciones
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("plants")
+}
+```
+
+### Modelo Operation (Operación)
+
+```prisma
+model Operation {
+  id        String         @id @default(cuid())
+  name      String         // Ej: "Impresión", "Laminado"
+  plantId   String         // FK hacia Plant
+  plant     Plant          @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  costs     IndirectCost[] // Relación 1:N con costos
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([plantId, name]) // Una operación única por planta
+  @@map("operations")
+}
+```
+
+### Modelo IndirectCost (Costo Indirecto)
+
+```prisma
+model IndirectCost {
+  id                 String    @id @default(cuid())
+  volumeThresholdKg  Float     // Ej: 300, 1000, 5000
+  costPerKg          Float     // Ej: 0.05, 0.03, 0.02
+  operationId        String    // FK hacia Operation
+  operation          Operation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@unique([operationId, volumeThresholdKg]) // Un costo único por volumen por operación
+  @@map("indirect_costs")
+}
+```
+
+### Ejemplo Práctico de Datos
+
+```typescript
+// Planta Norte
+Plant {
+  name: "Planta Norte",
+  code: "PN",
+  operations: [
+    {
+      name: "Impresión",
+      costs: [
+        { volumeThresholdKg: 300, costPerKg: 0.05 },
+        { volumeThresholdKg: 1000, costPerKg: 0.03 },
+        { volumeThresholdKg: 5000, costPerKg: 0.02 }
+      ]
+    },
+    {
+      name: "Laminado",
+      costs: [
+        { volumeThresholdKg: 500, costPerKg: 0.04 },
+        { volumeThresholdKg: 2000, costPerKg: 0.025 }
+      ]
+    }
+  ]
+}
+```
+
 ## 🗄️ Base de Datos
 
 El proyecto usa **SQLite** con **Prisma** como ORM:
