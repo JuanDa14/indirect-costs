@@ -191,6 +191,152 @@ PUBLIC_API_URL= "http://localhost:4000"
 -  **Base de datos**: Prisma Studio `npx prisma studio`
 -  **Frontend**: React DevTools recomendado
 
+## ✅ Git Workflow y Manejo de Branches
+
+### Convención de Branching
+
+El proyecto utiliza **Git Flow** con la siguiente estructura:
+
+```
+main                   # Rama principal (producción)
+├── develop            # Rama de desarrollo (integración)
+├── feature/nombre     # Nuevas características
+├── hotfix/nombre      # Correcciones urgentes
+└── release/version    # Preparación de releases
+```
+
+#### Tipos de Branches
+
+-  **`main`**: Código estable en producción
+-  **`develop`**: Integración de nuevas características
+-  **`feature/`**: Desarrollo de nuevas funcionalidades
+-  **`hotfix/`**: Correcciones críticas en producción
+-  **`release/staging`**: Preparación y estabilización de versiones
+
+### Crear una Nueva Feature
+
+```bash
+# Cambiar a develop y actualizar
+git checkout develop
+git pull origin develop
+
+# Crear nueva rama feature
+git checkout -b feature/indirect-costs
+
+# Trabajar en la feature...
+git add .
+git commit -m "feat: add indirect costs calculation"
+
+# Subir la feature
+git push origin feature/indirect-costs
+```
+
+### Mantener Branch Actualizado con Main
+
+#### Merge con git flow
+
+```bash
+# Desde tu feature branch
+git checkout feature/indirect-costs
+
+# Traer últimos cambios de main
+git fetch origin
+git merge origin/main
+
+# Si hay conflictos, resolverlos y continuar
+git add .
+git commit -m "merge: resolve conflicts with main"
+
+# Subir cambios
+git push origin feature/indirect-costs
+```
+
+### Manejo de Conflictos en schema.graphql
+
+#### Escenario: Dos desarrolladores editando el schema
+
+**Desarrollador A** agrega:
+
+```graphql
+type Plant {
+	id: ID!
+	name: String!
+	code: String!
+	# A agrega este campo
+	location: String
+}
+```
+
+**Desarrollador B** agrega:
+
+```graphql
+type Plant {
+	id: ID!
+	name: String!
+	code: String!
+	# B agrega este campo
+	capacity: Int
+}
+```
+
+#### Resolución de Conflictos
+
+1. **Al hacer merge/rebase aparece conflicto:**
+
+```bash
+git merge origin/main
+# Auto-merging backend/src/schema.graphql
+# CONFLICT (content): Merge conflict in backend/src/schema.graphql
+```
+
+2. **Abrir el archivo conflictivo:**
+
+```graphql
+type Plant {
+  id: ID!
+  name: String!
+  code: String!
+<<<<<<< HEAD
+  # Tu cambio
+  location: String
+=======
+  # Cambio del otro desarrollador
+  capacity: Int
+>>>>>>> origin/main
+}
+```
+
+3. **Resolver manualmente (mantener ambos campos):**
+
+```graphql
+type Plant {
+	id: ID!
+	name: String!
+	code: String!
+	# Mantener ambos campos
+	location: String
+	capacity: Int
+}
+```
+
+4. **Completar la resolución:**
+
+```bash
+# Marcar como resuelto
+git add backend/src/schema.graphql
+
+# Regenerar tipos GraphQL después del merge
+cd frontend
+npm run codegen
+
+# Actualizar tipos de Prisma si es necesario
+cd ../backend
+npx prisma generate
+
+# Finalizar merge/rebase
+git commit -m "resolve: merge schema.graphql conflicts"
+```
+
 ## 🚀 Despliegue
 
 ### Build de Producción
